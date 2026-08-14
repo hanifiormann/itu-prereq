@@ -52,6 +52,11 @@ const Connections = ({
             opacity = isAnyHighlight ? 1 : 0.02;
           }
 
+          let dashness = false;
+          if (isAnyHighlight) {
+            dashness = { animation: -1 }; // Negative for flow towards the target
+          }
+
           connections.push(
             <Xarrow
               key={`${req}-${item.code}`}
@@ -64,6 +69,7 @@ const Connections = ({
               headSize={4}
               curveness={0.4}
               zIndex={zIndex}
+              dashness={dashness}
               animateDrawing={isAnyHighlight ? 1 : false}
               passProps={{
                 style: {

@@ -2,10 +2,12 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import CourseGrid from './components/CourseGrid';
 import Connections from './components/Connections';
+import CourseDetailPanel from './components/CourseDetailPanel';
 import { useItuData } from './hooks/useItuData';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Xwrapper } from 'react-xarrows';
-import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { ZoomIn, ZoomOut, Maximize, Sun, Moon, Download } from 'lucide-react';
 
 function App() {
   const { courses, plans, loading, error } = useItuData();
@@ -17,6 +19,12 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCourse, setActiveCourse] = useState(null);
   const [obsLive, setObsLive] = useState(false);
+  
+  // Theme State
+  const [theme, setTheme] = useState('dark');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // Highlighting State
   const [highlightedMain, setHighlightedMain] = useState(null);
@@ -83,6 +91,30 @@ function App() {
     setHighlightedPostreqs([]);
   }, []);
 
+  // Calculate Progress Stats
+  const curriculumStats = React.useMemo(() => {
+    let totalCredits = 0;
+    let totalEcts = 0;
+    let passedCredits = 0;
+    let passedEcts = 0;
+
+    currentSemesters.flat().forEach(item => {
+      if (item.type === 'course' && courses[item.code]) {
+        const c = parseFloat(courses[item.code].credits) || 0;
+        const e = parseFloat(courses[item.code].ects) || 0;
+        totalCredits += c;
+        totalEcts += e;
+        
+        if (courseStatuses[item.code] === 'passed') {
+          passedCredits += c;
+          passedEcts += e;
+        }
+      }
+    });
+
+    return { totalCredits, totalEcts, passedCredits, passedEcts };
+  }, [currentSemesters, courses, courseStatuses]);
+
   // Pan functionality
   const handleMouseDown = (e) => {
     if(e.target.closest('.course-card')) return;
@@ -105,6 +137,26 @@ function App() {
     const walkY = (y - dragStart.y) * 1.5;
     canvasRef.current.scrollLeft = dragStart.scrollLeft - walkX;
     canvasRef.current.scrollTop = dragStart.scrollTop - walkY;
+  };
+
+  const handleExport = async () => {
+    if (!canvasRef.current) return;
+    try {
+      const element = canvasRef.current.children[0]; // The div containing Xwrapper
+      const canvas = await html2canvas(element, {
+        backgroundColor: theme === 'dark' ? '#0a1128' : '#f8fafc',
+        scale: 2, // High resolution
+        useCORS: true,
+      });
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `ITU-Zincir-${program.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Görüntü dışa aktarılamadı.");
+    }
   };
 
   if (loading) {
@@ -141,10 +193,38 @@ function App() {
         obsLive={obsLive} setObsLive={setObsLive}
       />
       
-      <main className="flex-grow relative bg-[radial-gradient(circle_at_center,_#111d3d_0%,_#0a1128_100%)] overflow-hidden">
+      <main className="flex-grow relative bg-gradient-to-br from-bgSecondary to-bgPrimary overflow-hidden">
         
+        {/* Progress Bar */}
+        {currentSemesters.length > 0 && (
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4 pointer-events-none">
+            <div className="glass-panel p-4 rounded-xl flex flex-col gap-2 pointer-events-auto shadow-2xl">
+              <div className="flex justify-between items-center text-sm font-semibold">
+                <span>Mezuniyet İlerlemesi</span>
+                <span className="text-accentBlue">{((curriculumStats.passedEcts / (curriculumStats.totalEcts || 1)) * 100).toFixed(1)}%</span>
+              </div>
+              <div className="w-full bg-black/20 rounded-full h-3 overflow-hidden border border-white/5 relative">
+                <div 
+                  className="bg-accentBlue h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(76,201,240,0.8)]"
+                  style={{ width: `${Math.min(100, (curriculumStats.passedEcts / (curriculumStats.totalEcts || 1)) * 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-textMuted mt-1">
+                <span>Kredi: <strong className="text-white">{curriculumStats.passedCredits}</strong> / {curriculumStats.totalCredits}</span>
+                <span>AKTS: <strong className="text-white">{curriculumStats.passedEcts}</strong> / {curriculumStats.totalEcts}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Toolbar */}
         <div className="absolute top-6 right-6 z-30 flex gap-2">
+          <button onClick={handleExport} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group mr-2" title="Görüntüyü İndir (PNG)">
+            <Download className="w-5 h-5 group-hover:scale-110 transition" />
+          </button>
+          <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group mr-4" title="Tema Değiştir">
+            {theme === 'dark' ? <Sun className="w-5 h-5 group-hover:scale-110 transition" /> : <Moon className="w-5 h-5 group-hover:scale-110 transition" />}
+          </button>
           <button onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group"><ZoomIn className="w-5 h-5 group-hover:scale-110 transition" /></button>
           <button onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group"><ZoomOut className="w-5 h-5 group-hover:scale-110 transition" /></button>
           <button onClick={() => setZoom(1)} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group"><Maximize className="w-5 h-5 group-hover:scale-110 transition" /></button>
@@ -189,6 +269,16 @@ function App() {
             </div>
           )}
         </div>
+
+        {/* Course Detail Panel */}
+        {activeCourse && (
+          <CourseDetailPanel 
+            course={activeCourse} 
+            status={courseStatuses[activeCourse.code]}
+            toggleStatus={handleToggleStatus}
+            onClose={() => setActiveCourse(null)} 
+          />
+        )}
       </main>
     </>
   );

@@ -95,32 +95,12 @@ const Sidebar = ({
           </div>
         </div>
 
-        {activeCourse ? (
-          <div className="mt-4 bg-bgPanel p-4 rounded-xl border border-white/5 flex-grow">
-            <h3 className="text-xl font-bold text-accentBlue">{activeCourse.code}</h3>
-            <p className="text-sm text-textMuted mt-1 mb-4">{activeCourse.name}</p>
-            <div className="space-y-1 text-sm mb-6">
-              <div className="flex justify-between"><span className="text-textMuted">Kredi:</span><span className="font-semibold">{activeCourse.credits || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-textMuted">AKTS:</span><span className="font-semibold">{activeCourse.ects || '-'}</span></div>
-              <div className="flex flex-col mt-2 pt-2 border-t border-white/10">
-                <span className="text-textMuted">Ön Koşullar:</span>
-                <span className="text-xs text-right mt-1 text-white/80 leading-relaxed">{activeCourse.prereqStr || 'Yok'}</span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <button onClick={() => toggleStatus(activeCourse.code, 'passed')} className="p-2 rounded bg-statusPassed hover:opacity-90 transition text-sm font-bold text-white shadow-lg">Geçtim İşaretle</button>
-              <button onClick={() => toggleStatus(activeCourse.code, 'failed')} className="p-2 rounded bg-statusFailed hover:opacity-90 transition text-sm font-bold text-white shadow-lg">Kaldım İşaretle</button>
-              <button onClick={() => toggleStatus(activeCourse.code, 'reset')} className="p-2 rounded bg-gray-600 hover:opacity-90 transition text-sm font-bold text-white">Durumu Sıfırla</button>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-4 bg-bgPanel p-4 rounded-xl border border-white/5 flex-grow flex items-center justify-center text-center">
-            <p className="text-sm text-textMuted italic flex flex-col items-center gap-2">
-              <GraduationCap className="w-8 h-8 opacity-50" />
-              Detayları görmek için bir derse tıklayın.
-            </p>
-          </div>
-        )}
+        <div className="mt-4 bg-bgPanel p-4 rounded-xl border border-white/5 flex-grow flex items-center justify-center text-center">
+          <p className="text-sm text-textMuted italic flex flex-col items-center gap-2">
+            <GraduationCap className="w-8 h-8 opacity-50" />
+            Detayları ve AKTS bilgilerini görmek, dersi "Geçti" olarak işaretlemek için sağdaki haritadan bir derse tıklayın.
+          </p>
+        </div>
       </div>
 
       <div className="mt-4 flex items-center gap-3 text-sm text-textMuted bg-bgPrimary p-3 rounded-lg border border-white/5">
