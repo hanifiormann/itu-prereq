@@ -43,35 +43,36 @@ const CourseGrid = ({
   };
 
   return (
-    <div className="flex p-12 gap-16 min-w-max min-h-max" id="curriculum-grid">
+    <div className="flex flex-col p-12 gap-12 min-w-max min-h-max" id="curriculum-grid">
       {semesters.map((semester, idx) => (
-        <div key={idx} className="flex flex-col gap-6 w-40 relative z-10">
-          <div className="sticky top-0 bg-bgPrimary/80 backdrop-blur-sm z-20 text-center font-semibold text-accentBlue pb-3 border-b-2 border-white/10 mb-2">
+        <div key={idx} className="flex flex-row items-center gap-10 relative z-10">
+          <div className="w-24 shrink-0 text-right font-semibold text-accentBlue pr-4 border-r-2 border-white/10">
             {idx + 1}. Dönem
           </div>
-          
-          {semester.map((item, itemIdx) => {
-            const courseData = item.type === 'course' ? courses[item.code] : null;
-            const code = item.type === 'course' ? item.code : item.name;
-            const name = courseData ? courseData.name : (item.type === 'elective' ? 'Seçmeli Ders' : '');
-            
-            return (
-              <CourseCard 
-                key={`${item.id}-${itemIdx}`}
-                item={item}
-                courseData={courseData}
-                status={checkStatus(item)}
-                isHighlightedMain={highlightedMain === code}
-                isHighlightedPrereq={highlightedPrereqs.includes(code)}
-                isHighlightedPostreq={highlightedPostreqs.includes(code)}
-                hasActiveHighlight={!!highlightedMain}
-                isDimmedBySearch={isDimmedBySearch(code, name)}
-                onClick={onCourseClick}
-                onHover={onCourseHover}
-                onHoverEnd={onCourseHoverEnd}
-              />
-            );
-          })}
+          <div className="flex flex-row gap-6">
+            {semester.map((item, itemIdx) => {
+              const courseData = item.type === 'course' ? courses[item.code] : null;
+              const code = item.type === 'course' ? item.code : item.name;
+              const name = courseData ? courseData.name : (item.type === 'elective' ? 'Seçmeli Ders' : '');
+              
+              return (
+                <CourseCard 
+                  key={`${item.id}-${itemIdx}`}
+                  item={item}
+                  courseData={courseData}
+                  status={checkStatus(item)}
+                  isHighlightedMain={highlightedMain === code}
+                  isHighlightedPrereq={highlightedPrereqs.includes(code)}
+                  isHighlightedPostreq={highlightedPostreqs.includes(code)}
+                  hasActiveHighlight={!!highlightedMain}
+                  isDimmedBySearch={isDimmedBySearch(code, name)}
+                  onClick={onCourseClick}
+                  onHover={onCourseHover}
+                  onHoverEnd={onCourseHoverEnd}
+                />
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>

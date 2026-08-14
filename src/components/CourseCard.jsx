@@ -71,7 +71,7 @@ const CourseCard = ({
   return (
     <motion.div
       id={`node-${item.id}`}
-      className={`relative rounded-xl p-4 cursor-pointer select-none border-2 transition-all duration-300 ${bgColor} ${borderHighlight} ${glow}`}
+      className={`relative w-40 min-h-[6rem] flex flex-col justify-center items-center rounded-xl p-4 cursor-pointer select-none border-2 transition-all duration-300 ${bgColor} ${borderHighlight} ${glow}`}
       style={{ opacity, filter }}
       whileHover={status !== 'locked' ? { scale: 1.05, y: -5 } : {}}
       whileTap={status !== 'locked' ? { scale: 0.95 } : {}}
@@ -83,7 +83,7 @@ const CourseCard = ({
         <div className={`absolute -top-2 -right-2 w-4 h-4 rounded-full border-2 border-bgPrimary z-10 transition-opacity duration-300 ${statusColor} ${hasActiveHighlight && !isPartOfChain ? 'opacity-20' : 'opacity-100'}`} />
       )}
       <div className="font-bold text-lg text-center tracking-wide">{code}</div>
-      <div className="text-xs text-center text-gray-300 mt-1 line-clamp-3 leading-tight">{name}</div>
+      <div className="text-xs text-center text-gray-300 mt-1 line-clamp-3 leading-tight w-full break-words">{name}</div>
     </motion.div>
   );
 };
