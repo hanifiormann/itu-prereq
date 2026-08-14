@@ -65,39 +65,26 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
     }
 
     setLoading(true);
-    setStatusMsg("OBS üzerinden branş kodları alınıyor...");
+    setStatusMsg("OBS üzerinden ders programları indiriliyor...");
     
     try {
-      const branches = await fetchBranchCodes();
-      if (!branches || branches.length === 0) {
-        throw new Error("Branş kodları çekilemedi (Proxy engellenmiş olabilir).");
+      // Fetch all courses from GitHub
+      const crnList = await fetchCourseSchedule();
+      if (!crnList || crnList.length === 0) {
+        throw new Error("Ders verileri çekilemedi.");
       }
 
-      // Find unique branches needed (e.g. MAT, FIZ, GEO)
-      const neededBranches = new Set();
-      availableCourses.forEach(c => {
-        const b = c.split(' ')[0];
-        neededBranches.add(b);
-      });
-
+      setStatusMsg("Kendi alınabilir dersleriniz filtreleniyor...");
+      
       const scheduleData = {};
-      let totalFetched = 0;
-
-      for (let branchCode of neededBranches) {
-        const branchObj = branches.find(b => b.dersBransKodu === branchCode);
-        if (branchObj) {
-          setStatusMsg(`${branchCode} ders programı çekiliyor... (${totalFetched+1}/${neededBranches.size})`);
-          const crnList = await fetchCourseSchedule(branchObj.bransKoduId);
-          // Filter to only the courses we need
-          crnList.forEach(c => {
-            if (availableCourses.includes(c.code)) {
-              if (!scheduleData[c.code]) scheduleData[c.code] = [];
-              scheduleData[c.code].push(c);
-            }
-          });
+      
+      // Filter to only the courses we need
+      crnList.forEach(c => {
+        if (availableCourses.includes(c.code)) {
+          if (!scheduleData[c.code]) scheduleData[c.code] = [];
+          scheduleData[c.code].push(c);
         }
-        totalFetched++;
-      }
+      });
 
       setAvailableCoursesData(scheduleData);
       generateCombinations(scheduleData);

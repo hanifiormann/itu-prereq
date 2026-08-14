@@ -1,76 +1,73 @@
-const PROXY_URL = "https://api.allorigins.win/raw?url=";
+// Fetch and parse the course schedule from the open source itu-helper data repository
+// This avoids the OBS CORS/Cloudflare blocks completely.
 
-// Fetch all available branch codes for a given program level (LS = Lisans)
-export const fetchBranchCodes = async (seviye = 'LS') => {
-  try {
-    const url = `https://obs.itu.edu.tr/public/DersProgram/SearchBransKoduByProgramSeviye?programSeviyeTipiAnahtari=${seviye}`;
-    const response = await fetch(PROXY_URL + encodeURIComponent(url));
-    if (!response.ok) throw new Error("Failed to fetch branch codes.");
-    const data = await response.json();
-    return data; // Array of { bransKoduId: number, dersBransKodu: string }
-  } catch (error) {
-    console.error("fetchBranchCodes error:", error);
-    return [];
-  }
+const DATA_URL = "https://raw.githubusercontent.com/itu-helper/data/main/lessons.psv";
+
+// We keep fetchBranchCodes just to keep the TimetableBuilder interface happy if it calls it,
+// but we don't really need branch codes if we have all courses in one file.
+// We'll return a dummy array so it doesn't fail.
+export const fetchBranchCodes = async () => {
+  return [{ bransKoduId: 1, dersBransKodu: "ALL" }];
 };
 
-// Fetch and parse the course schedule HTML
-export const fetchCourseSchedule = async (bransKoduId, seviye = 'LS') => {
+// Instead of fetching per branch, we will fetch the entire DB once and cache it.
+let cachedScheduleData = null;
+
+export const fetchCourseSchedule = async () => {
+  if (cachedScheduleData) return cachedScheduleData;
+
   try {
-    const url = `https://obs.itu.edu.tr/public/DersProgram/DersProgramSearch?ProgramSeviyeTipiAnahtari=${seviye}&DersBransKoduId=${bransKoduId}`;
-    const response = await fetch(PROXY_URL + encodeURIComponent(url));
-    if (!response.ok) throw new Error("Failed to fetch schedule.");
+    const response = await fetch(DATA_URL);
+    if (!response.ok) throw new Error("Failed to fetch schedule data from GitHub.");
     
-    const html = await response.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
+    const text = await response.text();
+    const lines = text.split('\n');
     
     const courses = [];
     
-    // Find the main table in the returned HTML
-    const table = doc.querySelector('.table-responsive table tbody');
-    if (!table) return [];
-    
-    const rows = table.querySelectorAll('tr');
-    
-    rows.forEach(row => {
-      const cols = row.querySelectorAll('td');
+    lines.forEach(line => {
+      if (!line.trim()) return;
+      const cols = line.split('|');
       if (cols.length < 10) return;
       
-      const crn = cols[0].innerText.trim();
-      const code = cols[1].innerText.trim();
-      const title = cols[2].innerText.trim();
-      const instructor = cols[3].innerText.trim();
-      const building = cols[4].innerText.trim();
-      const day = cols[5].innerText.trim();
-      const time = cols[6].innerText.trim();
-      const room = cols[7].innerText.trim();
-      const capacity = cols[8].innerText.trim();
-      const enrolled = cols[9].innerText.trim();
-      const restriction = cols[10] ? cols[10].innerText.trim() : "";
+      const crn = cols[0].trim();
+      const code = cols[1].trim();
+      // title is not in this dump, we'll use code as title
+      const title = cols[1].trim(); 
+      const instructor = cols[2].trim();
+      const building = cols[4].trim();
+      const day = translateDay(cols[5].trim());
+      const time = cols[6].trim();
+      const room = cols[7].trim();
+      const capacity = cols[8].trim();
+      const enrolled = cols[9].trim();
+      const restriction = cols[10] ? cols[10].trim() : "";
       
-      // Since some courses have multiple days (e.g. lab), OBS duplicates rows or merges cells. 
-      // For simplicity, we just add the entry. We can group by CRN later if needed.
       courses.push({
-        crn,
-        code,
-        title,
-        instructor,
-        building,
-        day,
-        time,
-        room,
-        capacity,
-        enrolled,
-        restriction
+        crn, code, title, instructor, building, day, time, room, capacity, enrolled, restriction
       });
     });
     
-    return groupCoursesByCRN(courses);
+    const grouped = groupCoursesByCRN(courses);
+    cachedScheduleData = grouped;
+    return grouped;
   } catch (error) {
     console.error("fetchCourseSchedule error:", error);
     return [];
   }
+};
+
+const translateDay = (engDay) => {
+  const map = {
+    'Monday': 'Pazartesi',
+    'Tuesday': 'Salı',
+    'Wednesday': 'Çarşamba',
+    'Thursday': 'Perşembe',
+    'Friday': 'Cuma',
+    'Saturday': 'Cumartesi',
+    'Sunday': 'Pazar'
+  };
+  return map[engDay] || engDay;
 };
 
 // Group multiple schedule lines (e.g. theoretical + lab on different days) into single CRN objects
@@ -91,7 +88,7 @@ const groupCoursesByCRN = (flatCourses) => {
       };
     }
     
-    if (course.day && course.time) {
+    if (course.day && course.time && course.time !== 'TBA') {
       grouped[course.crn].schedules.push({
         day: course.day,
         time: course.time,
@@ -104,20 +101,24 @@ const groupCoursesByCRN = (flatCourses) => {
   return Object.values(grouped);
 };
 
-// Convert OBS time format (e.g. "0830/1129") to standard hours
+// Convert OBS time format (e.g. "0830/1129" or "08:30/11:29") to standard hours
 export const parseTimeSlot = (timeStr) => {
-  if (!timeStr) return null;
+  if (!timeStr || timeStr === 'TBA' || timeStr === '--') return null;
   const parts = timeStr.split('/');
   if (parts.length !== 2) return null;
   
   const formatTime = (t) => {
-    const h = t.substring(0, 2);
-    const m = t.substring(2, 4);
+    let clean = t.trim().replace(':', '');
+    if (clean.length === 3) clean = '0' + clean;
+    if (clean.length !== 4) return null;
+    const h = clean.substring(0, 2);
+    const m = clean.substring(2, 4);
     return `${h}:${m}`;
   };
   
-  return {
-    start: formatTime(parts[0].trim()),
-    end: formatTime(parts[1].trim())
-  };
+  const start = formatTime(parts[0]);
+  const end = formatTime(parts[1]);
+  if (!start || !end) return null;
+  
+  return { start, end };
 };
