@@ -32,6 +32,7 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
   const [availableCoursesData, setAvailableCoursesData] = useState({});
   const [combinations, setCombinations] = useState([]);
   const [currentComboIdx, setCurrentComboIdx] = useState(0);
+  const [maxCourses, setMaxCourses] = useState(5);
 
   // 1. Identify which courses the user can take this semester
   const availableCourses = useMemo(() => {
@@ -101,27 +102,26 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
     setStatusMsg("Kombinasyonlar hesaplanıyor...");
     const courseKeys = Object.keys(data).filter(k => data[k].length > 0);
     
-    // If user has 10 available courses, generating all might freeze the browser.
-    // Let's limit it to taking 5-6 courses max at a time, or just combine all possible valid schedules.
-    // For simplicity, we try to schedule the first 5 available courses they select, but here we try all.
-    // To prevent infinite loops, we just take the first 5 keys.
-    const selectedKeys = courseKeys.slice(0, 6); 
-    
+    if (courseKeys.length < maxCourses) {
+      alert(`Sadece ${courseKeys.length} adet alınabilir dersiniz bulundu, fakat siz ${maxCourses} ders istediniz.`);
+    }
+
     const validCombos = [];
 
-    const backtrack = (idx, currentSchedule) => {
+    const backtrack = (courseIndex, currentSchedule) => {
       if (validCombos.length > 50) return; // Limit to 50 combinations
-      if (idx === selectedKeys.length) {
+      if (currentSchedule.length === maxCourses || currentSchedule.length === courseKeys.length) {
+        // If we reached the desired count, or we took all available courses
         validCombos.push([...currentSchedule]);
         return;
       }
+      if (courseIndex >= courseKeys.length) return;
 
-      const code = selectedKeys[idx];
+      const code = courseKeys[courseIndex];
       const crns = data[code];
       
-      let added = false;
+      // Option 1: Try adding a CRN from this course
       for (let crnObj of crns) {
-        // Check conflict with currentSchedule
         let conflict = false;
         for (let existing of currentSchedule) {
           if (checkConflict(existing.schedules, crnObj.schedules)) {
@@ -132,16 +132,16 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
         
         if (!conflict) {
           currentSchedule.push(crnObj);
-          backtrack(idx + 1, currentSchedule);
+          backtrack(courseIndex + 1, currentSchedule);
           currentSchedule.pop();
-          added = true;
         }
       }
 
-      // If we couldn't add any CRN for this course without conflict, we can optionally skip it.
-      // But usually we want a full schedule. If we allow skipping:
-      if (!added) {
-        backtrack(idx + 1, currentSchedule);
+      // Option 2: Skip this course entirely, if we still have enough remaining courses to reach the target
+      const remainingCourses = courseKeys.length - courseIndex - 1;
+      const neededCourses = Math.min(maxCourses, courseKeys.length) - currentSchedule.length;
+      if (remainingCourses >= neededCourses) {
+        backtrack(courseIndex + 1, currentSchedule);
       }
     };
 
@@ -149,7 +149,18 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
     
     // Sort combos by number of courses (descending)
     validCombos.sort((a,b) => b.length - a.length);
-    setCombinations(validCombos);
+    // Remove exact duplicates just in case
+    const uniqueCombos = [];
+    const seen = new Set();
+    validCombos.forEach(c => {
+      const signature = c.map(x => x.crn).sort().join('-');
+      if (!seen.has(signature)) {
+        seen.add(signature);
+        uniqueCombos.push(c);
+      }
+    });
+
+    setCombinations(uniqueCombos);
     setCurrentComboIdx(0);
   };
 
@@ -176,12 +187,24 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
           <p className="text-textMuted mt-1">Zincirde <b>alabileceğiniz</b> derslere göre otomatik çakışmayan program kombinasyonları.</p>
         </div>
         
-        <button 
-          onClick={loadScheduleData}
-          className="glass-panel px-6 py-3 rounded-xl font-bold hover:bg-accentBlue hover:text-white transition shadow-lg flex items-center gap-2"
-        >
-          <RefreshCw className="w-5 h-5" /> Program Üret
-        </button>
+        <div className="flex items-center gap-4">
+          <div className="glass-panel px-4 py-3 rounded-xl flex items-center gap-3">
+            <label className="text-sm font-bold text-textMuted">Hedef Ders Sayısı:</label>
+            <select 
+              value={maxCourses} 
+              onChange={(e) => setMaxCourses(Number(e.target.value))}
+              className="bg-bgPrimary text-white font-bold border border-white/10 rounded-lg px-2 py-1 outline-none focus:border-accentBlue"
+            >
+              {[3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} Ders</option>)}
+            </select>
+          </div>
+          <button 
+            onClick={loadScheduleData}
+            className="glass-panel px-6 py-3 rounded-xl font-bold hover:bg-accentBlue hover:text-white transition shadow-lg flex items-center gap-2"
+          >
+            <RefreshCw className="w-5 h-5" /> Program Üret
+          </button>
+        </div>
       </div>
 
       {!currentCombo && Object.keys(availableCoursesData).length === 0 && (
