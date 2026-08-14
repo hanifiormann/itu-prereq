@@ -3,11 +3,12 @@ import Sidebar from './components/Sidebar';
 import CourseGrid from './components/CourseGrid';
 import Connections from './components/Connections';
 import CourseDetailPanel from './components/CourseDetailPanel';
+import TimetableBuilder from './components/TimetableBuilder';
 import { useItuData } from './hooks/useItuData';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Xwrapper } from 'react-xarrows';
-import html2canvas from 'html2canvas';
-import { ZoomIn, ZoomOut, Maximize, Sun, Moon, Download } from 'lucide-react';
+import { toPng } from 'html-to-image';
+import { ZoomIn, ZoomOut, Maximize, Sun, Moon, Download, CalendarDays, Map } from 'lucide-react';
 
 function App() {
   const { courses, plans, loading, error } = useItuData();
@@ -20,6 +21,9 @@ function App() {
   const [activeCourse, setActiveCourse] = useState(null);
   const [obsLive, setObsLive] = useState(false);
   
+  // Tab State
+  const [activeTab, setActiveTab] = useState('map');
+
   // Theme State
   const [theme, setTheme] = useState('dark');
   useEffect(() => {
@@ -169,12 +173,11 @@ function App() {
     if (!canvasRef.current) return;
     try {
       const element = canvasRef.current.children[0]; // The div containing Xwrapper
-      const canvas = await html2canvas(element, {
+      const dataUrl = await toPng(element, {
         backgroundColor: theme === 'dark' ? '#0a1128' : '#f8fafc',
-        scale: 2, // High resolution
-        useCORS: true,
+        pixelRatio: 2, 
+        skipFonts: true,
       });
-      const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.download = `ITU-Zincir-${program.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.png`;
       link.href = dataUrl;
@@ -221,8 +224,20 @@ function App() {
       
       <main className="flex-grow relative bg-gradient-to-br from-bgSecondary to-bgPrimary overflow-hidden">
         
-        {/* Progress Bar */}
+        {/* Tabs */}
         {currentSemesters.length > 0 && (
+          <div className="absolute top-6 left-6 z-30 flex gap-2">
+            <button onClick={() => setActiveTab('map')} className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition ${activeTab === 'map' ? 'bg-accentBlue text-white' : 'glass-panel text-textMuted hover:text-white'}`}>
+              <Map className="w-5 h-5" /> Müfredat
+            </button>
+            <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition ${activeTab === 'timetable' ? 'bg-accentBlue text-white' : 'glass-panel text-textMuted hover:text-white'}`}>
+              <CalendarDays className="w-5 h-5" /> Program Üret
+            </button>
+          </div>
+        )}
+
+        {/* Progress Bar */}
+        {currentSemesters.length > 0 && activeTab === 'map' && (
           <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4 pointer-events-none">
             <div className="glass-panel p-4 rounded-xl flex flex-col gap-2 pointer-events-auto shadow-2xl">
               <div className="flex justify-between items-center text-sm font-semibold">
@@ -244,57 +259,67 @@ function App() {
         )}
 
         {/* Toolbar */}
-        <div className="absolute top-6 right-6 z-30 flex gap-2">
-          <button onClick={handleExport} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group mr-2" title="Görüntüyü İndir (PNG)">
-            <Download className="w-5 h-5 group-hover:scale-110 transition" />
-          </button>
-          <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group mr-4" title="Tema Değiştir">
-            {theme === 'dark' ? <Sun className="w-5 h-5 group-hover:scale-110 transition" /> : <Moon className="w-5 h-5 group-hover:scale-110 transition" />}
-          </button>
-          <button onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group"><ZoomIn className="w-5 h-5 group-hover:scale-110 transition" /></button>
-          <button onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group"><ZoomOut className="w-5 h-5 group-hover:scale-110 transition" /></button>
-          <button onClick={() => setZoom(1)} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group"><Maximize className="w-5 h-5 group-hover:scale-110 transition" /></button>
-        </div>
+        {activeTab === 'map' && (
+          <div className="absolute top-6 right-6 z-30 flex gap-2">
+            <button onClick={handleExport} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group mr-2" title="Görüntüyü İndir (PNG)">
+              <Download className="w-5 h-5 group-hover:scale-110 transition" />
+            </button>
+            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group mr-4" title="Tema Değiştir">
+              {theme === 'dark' ? <Sun className="w-5 h-5 group-hover:scale-110 transition" /> : <Moon className="w-5 h-5 group-hover:scale-110 transition" />}
+            </button>
+            <button onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group"><ZoomIn className="w-5 h-5 group-hover:scale-110 transition" /></button>
+            <button onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group"><ZoomOut className="w-5 h-5 group-hover:scale-110 transition" /></button>
+            <button onClick={() => setZoom(1)} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group"><Maximize className="w-5 h-5 group-hover:scale-110 transition" /></button>
+          </div>
+        )}
 
-        {/* Canvas */}
-        <div 
-          ref={canvasRef}
-          className={`w-full h-full overflow-auto custom-scrollbar relative ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onMouseMove={handleMouseMove}
-        >
-          {currentSemesters.length > 0 ? (
-            <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', position: 'relative' }}>
-              <Xwrapper>
-                <CourseGrid 
-                  semesters={currentSemesters}
-                  courses={courses}
-                  courseStatuses={courseStatuses}
-                  searchTerm={searchTerm}
-                  highlightedMain={highlightedMain}
-                  highlightedPrereqs={highlightedPrereqs}
-                  highlightedPostreqs={highlightedPostreqs}
-                  onCourseClick={(course) => setActiveCourse(course)}
-                  onCourseHover={handleCourseHover}
-                  onCourseHoverEnd={handleCourseHoverEnd}
-                />
-                <Connections 
-                  semesters={currentSemesters}
-                  courses={courses}
-                  highlightedMain={highlightedMain}
-                  highlightedPrereqs={highlightedPrereqs}
-                  highlightedPostreqs={highlightedPostreqs}
-                />
-              </Xwrapper>
-            </div>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-textMuted/50 text-xl font-medium pointer-events-none">
-              Önce sol menüden müfredat seçimi yapınız.
-            </div>
-          )}
-        </div>
+        {/* Content Area */}
+        {activeTab === 'map' ? (
+          <div 
+            ref={canvasRef}
+            className={`w-full h-full overflow-auto custom-scrollbar relative ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onMouseMove={handleMouseMove}
+          >
+            {currentSemesters.length > 0 ? (
+              <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', position: 'relative' }}>
+                <Xwrapper>
+                  <CourseGrid 
+                    semesters={currentSemesters}
+                    courses={courses}
+                    courseStatuses={courseStatuses}
+                    searchTerm={searchTerm}
+                    highlightedMain={highlightedMain}
+                    highlightedPrereqs={highlightedPrereqs}
+                    highlightedPostreqs={highlightedPostreqs}
+                    onCourseClick={(course) => setActiveCourse(course)}
+                    onCourseHover={handleCourseHover}
+                    onCourseHoverEnd={handleCourseHoverEnd}
+                  />
+                  <Connections 
+                    semesters={currentSemesters}
+                    courses={courses}
+                    highlightedMain={highlightedMain}
+                    highlightedPrereqs={highlightedPrereqs}
+                    highlightedPostreqs={highlightedPostreqs}
+                  />
+                </Xwrapper>
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-textMuted/50 text-xl font-medium pointer-events-none">
+                Önce sol menüden müfredat seçimi yapınız.
+              </div>
+            )}
+          </div>
+        ) : (
+          <TimetableBuilder 
+            semesters={currentSemesters}
+            courses={courses}
+            courseStatuses={courseStatuses}
+          />
+        )}
 
         {/* Course Detail Panel */}
         {activeCourse && (
