@@ -1,0 +1,137 @@
+import React, { useState, useEffect } from 'react';
+import { Search, GraduationCap } from 'lucide-react';
+
+const Sidebar = ({ 
+  plans, 
+  faculty, setFaculty, 
+  program, setProgram, 
+  version, setVersion,
+  searchTerm, setSearchTerm,
+  activeCourse,
+  courseStatuses,
+  toggleStatus,
+  obsLive, setObsLive
+}) => {
+
+  const faculties = Object.keys(plans).sort();
+  const programs = faculty && plans[faculty] ? Object.keys(plans[faculty]).sort() : [];
+  const versions = faculty && program && plans[faculty][program] ? Object.keys(plans[faculty][program]).sort((a,b) => b.localeCompare(a)) : [];
+
+  // Auto-select Geomatics as default
+  useEffect(() => {
+    if (faculties.includes("İnşaat Fakültesi") && !faculty) {
+      setFaculty("İnşaat Fakültesi");
+      setTimeout(() => {
+        setProgram("Geomatik Mühendisliği Lisans");
+        setTimeout(() => {
+          setVersion("2021-2022 / Güz Dönemi Sonrası");
+        }, 50);
+      }, 50);
+    }
+  }, [plans]);
+
+  return (
+    <aside className="w-80 bg-bgSecondary/90 backdrop-blur-md border-r border-white/10 h-full flex flex-col p-6 shadow-2xl z-20 shrink-0">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold tracking-tight">İTÜ<span className="text-accentRed">Zincir</span></h2>
+        <p className="text-textMuted text-sm mt-1">Ön Koşul Görselleştirici V2</p>
+      </div>
+
+      <div className="space-y-4 flex-grow">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-textMuted font-medium">Fakülte:</label>
+          <select 
+            className="p-2 bg-bgPrimary border border-white/10 rounded-md outline-none focus:border-accentBlue transition-colors text-sm"
+            value={faculty} onChange={(e) => { setFaculty(e.target.value); setProgram(''); setVersion(''); }}
+          >
+            <option value="">Seçiniz...</option>
+            {faculties.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-textMuted font-medium">Program:</label>
+          <select 
+            className="p-2 bg-bgPrimary border border-white/10 rounded-md outline-none focus:border-accentBlue transition-colors text-sm"
+            value={program} onChange={(e) => { setProgram(e.target.value); setVersion(''); }}
+            disabled={!faculty}
+          >
+            <option value="">Seçiniz...</option>
+            {programs.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-textMuted font-medium">Müfredat Yılı:</label>
+          <select 
+            className="p-2 bg-bgPrimary border border-white/10 rounded-md outline-none focus:border-accentBlue transition-colors text-sm"
+            value={version} onChange={(e) => setVersion(e.target.value)}
+            disabled={!program}
+          >
+            <option value="">Seçiniz...</option>
+            {versions.map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </div>
+
+        <div className="relative mt-6">
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-textMuted" />
+          <input 
+            type="text" 
+            placeholder="Ders Ara (Örn: GEO 201)" 
+            className="w-full p-2 pl-9 bg-bgPrimary border border-white/10 rounded-md outline-none focus:border-accentBlue transition-colors text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            disabled={!version}
+          />
+        </div>
+
+        <div className="mt-8 bg-bgPanel p-4 rounded-xl border border-white/5">
+          <h3 className="text-sm font-semibold mb-3 border-b border-white/10 pb-2">Lejant</h3>
+          <div className="space-y-2 text-sm text-textMain/80">
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-statusPassed shadow-[0_0_8px_rgba(76,175,80,0.6)]"></div> Geçildi</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-statusFailed shadow-[0_0_8px_rgba(244,67,54,0.6)]"></div> Kalındı</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-statusAvailable shadow-[0_0_8px_rgba(255,235,59,0.6)]"></div> Alınabilir</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-statusLocked"></div> Kilitli (Ön Koşul)</div>
+          </div>
+        </div>
+
+        {activeCourse ? (
+          <div className="mt-4 bg-bgPanel p-4 rounded-xl border border-white/5 flex-grow">
+            <h3 className="text-xl font-bold text-accentBlue">{activeCourse.code}</h3>
+            <p className="text-sm text-textMuted mt-1 mb-4">{activeCourse.name}</p>
+            <div className="space-y-1 text-sm mb-6">
+              <div className="flex justify-between"><span className="text-textMuted">Kredi:</span><span className="font-semibold">{activeCourse.credits || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-textMuted">AKTS:</span><span className="font-semibold">{activeCourse.ects || '-'}</span></div>
+              <div className="flex flex-col mt-2 pt-2 border-t border-white/10">
+                <span className="text-textMuted">Ön Koşullar:</span>
+                <span className="text-xs text-right mt-1 text-white/80 leading-relaxed">{activeCourse.prereqStr || 'Yok'}</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button onClick={() => toggleStatus(activeCourse.code, 'passed')} className="p-2 rounded bg-statusPassed hover:opacity-90 transition text-sm font-bold text-white shadow-lg">Geçtim İşaretle</button>
+              <button onClick={() => toggleStatus(activeCourse.code, 'failed')} className="p-2 rounded bg-statusFailed hover:opacity-90 transition text-sm font-bold text-white shadow-lg">Kaldım İşaretle</button>
+              <button onClick={() => toggleStatus(activeCourse.code, 'reset')} className="p-2 rounded bg-gray-600 hover:opacity-90 transition text-sm font-bold text-white">Durumu Sıfırla</button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 bg-bgPanel p-4 rounded-xl border border-white/5 flex-grow flex items-center justify-center text-center">
+            <p className="text-sm text-textMuted italic flex flex-col items-center gap-2">
+              <GraduationCap className="w-8 h-8 opacity-50" />
+              Detayları görmek için bir derse tıklayın.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 flex items-center gap-3 text-sm text-textMuted bg-bgPrimary p-3 rounded-lg border border-white/5">
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" className="sr-only peer" checked={obsLive} onChange={(e) => setObsLive(e.target.checked)} />
+          <div className="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accentRed"></div>
+        </label>
+        <span className="font-medium">OBS Canlı Veri (Deneysel)</span>
+      </div>
+    </aside>
+  );
+};
+
+export default Sidebar;
