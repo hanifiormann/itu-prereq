@@ -75,8 +75,8 @@ const CourseCard = ({
       style={{ opacity, filter }}
       whileHover={status !== 'locked' ? { scale: 1.05, y: -5 } : {}}
       whileTap={status !== 'locked' ? { scale: 0.95 } : {}}
-      onClick={() => { if(!isElective) onClick(courseData); }}
-      onMouseEnter={() => { if(!isElective) onHover(code); }}
+      onClick={() => onClick(courseData)}
+      onMouseEnter={() => onHover(code)}
       onMouseLeave={onHoverEnd}
     >
       {!isElective && (

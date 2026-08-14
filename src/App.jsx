@@ -120,8 +120,8 @@ function App() {
               break;
             }
           }
-          // Check if user passed any option in this elective
-          isPassed = item.options.some(opt => courseStatuses[opt.split('(')[0].trim()] === 'passed');
+          // Check if user passed the elective group itself or any option in this elective
+          isPassed = courseStatuses[item.name] === 'passed' || item.options.some(opt => courseStatuses[opt.split('(')[0].trim()] === 'passed');
         }
         if (!found) {
           c = 3;

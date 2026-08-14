@@ -15,7 +15,12 @@ const CourseGrid = ({
 }) => {
 
   const checkStatus = (item) => {
-    if (item.type === 'elective') return 'available';
+    if (item.type === 'elective') {
+      if (courseStatuses[item.name] === 'passed') return 'passed';
+      if (item.options && item.options.some(opt => courseStatuses[opt.split('(')[0].trim()] === 'passed')) return 'passed';
+      if (courseStatuses[item.name] === 'failed') return 'failed';
+      return 'available';
+    }
     
     let status = courseStatuses[item.code];
     if (!status) {
@@ -51,9 +56,17 @@ const CourseGrid = ({
           </div>
           <div className="flex flex-row gap-6">
             {semester.map((item, itemIdx) => {
-              const courseData = item.type === 'course' ? courses[item.code] : null;
-              const code = item.type === 'course' ? item.code : item.name;
-              const name = courseData ? courseData.name : (item.type === 'elective' ? 'Seçmeli Ders' : '');
+              const isElective = item.type === 'elective';
+              const courseData = isElective ? {
+                code: item.name,
+                name: "Seçmeli Ders Grubu",
+                credits: "3",
+                ects: "4",
+                prereqStr: "Seçenekler: " + (item.options?.join(', ') || "Belirtilmemiş")
+              } : courses[item.code];
+              
+              const code = isElective ? item.name : item.code;
+              const name = courseData ? courseData.name : '';
               
               return (
                 <CourseCard 
