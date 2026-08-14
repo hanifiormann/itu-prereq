@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchBranchCodes, fetchCourseSchedule, parseTimeSlot } from '../utils/obsScraper';
-import { CalendarDays, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { fetchAllCourseCodes, fetchCourseSchedule, parseTimeSlot } from '../utils/obsScraper';
+import { CalendarDays, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
 const TIMES = [
@@ -33,6 +33,11 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
   const [combinations, setCombinations] = useState([]);
   const [currentComboIdx, setCurrentComboIdx] = useState(0);
   const [maxCourses, setMaxCourses] = useState(5);
+  const [manualCourseList, setManualCourseList] = useState([]);
+  const [allCourseCodes, setAllCourseCodes] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [hasInitializedList, setHasInitializedList] = useState(false);
 
   // 1. Identify which courses the user can take this semester
   const availableCourses = useMemo(() => {
@@ -58,10 +63,23 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
     return list;
   }, [semesters, courses, courseStatuses]);
 
+  // Pre-fill manualCourseList on first load
+  useEffect(() => {
+    if (availableCourses.length > 0 && !hasInitializedList) {
+      setManualCourseList(availableCourses);
+      setHasInitializedList(true);
+    }
+  }, [availableCourses, hasInitializedList]);
+
+  // Fetch all possible course codes for autocomplete
+  useEffect(() => {
+    fetchAllCourseCodes().then(codes => setAllCourseCodes(codes));
+  }, []);
+
   // 2. Fetch data from OBS
   const loadScheduleData = async () => {
-    if (availableCourses.length === 0) {
-      alert("Alabileceğiniz bir ders bulunamadı.");
+    if (manualCourseList.length === 0) {
+      alert("Lütfen programda olmasını istediğiniz en az bir ders seçin.");
       return;
     }
 
@@ -81,7 +99,7 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
       
       // Filter to only the courses we need
       crnList.forEach(c => {
-        if (availableCourses.includes(c.code)) {
+        if (manualCourseList.includes(c.code)) {
           if (!scheduleData[c.code]) scheduleData[c.code] = [];
           scheduleData[c.code].push(c);
         }
@@ -204,6 +222,59 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
           >
             <RefreshCw className="w-5 h-5" /> Program Üret
           </button>
+        </div>
+      </div>
+
+      <div className="glass-panel p-6 rounded-xl">
+        <h3 className="text-xl font-bold mb-4">Hangi Dersleri Almak İstiyorsunuz?</h3>
+        <p className="text-sm text-textMuted mb-4">Aşağıdaki liste müfredatınıza göre otomatik doldurulmuştur. İsterseniz dersleri silebilir veya arama çubuğundan farklı dersler (örn: <b>MAT 103E</b>) ekleyebilirsiniz.</p>
+        
+        <div className="flex flex-wrap gap-2 mb-4">
+          {manualCourseList.map(code => (
+            <div key={code} className="bg-accentBlue/20 border border-accentBlue px-3 py-1.5 rounded-full flex items-center gap-2">
+              <span className="font-bold text-sm">{code}</span>
+              <button onClick={() => setManualCourseList(prev => prev.filter(c => c !== code))} className="hover:text-red-400 transition">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {manualCourseList.length === 0 && (
+            <span className="text-textMuted italic text-sm py-1.5">Hiç ders seçilmedi. Lütfen ders arayıp ekleyin.</span>
+          )}
+        </div>
+        
+        <div className="relative w-full max-w-md">
+          <input 
+            type="text" 
+            placeholder="Ders kodu ara (Örn: MAT 103E)..." 
+            className="w-full bg-bgPrimary border border-white/10 rounded-lg px-4 py-3 focus:border-accentBlue outline-none transition placeholder:text-white/30"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value.toUpperCase())}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+          />
+          {isSearchFocused && searchQuery.length > 1 && (
+            <div className="absolute top-full left-0 w-full mt-2 bg-bgPrimary border border-white/20 rounded-lg shadow-2xl max-h-60 overflow-y-auto z-50 py-2">
+              {allCourseCodes.filter(c => c.includes(searchQuery) && !manualCourseList.includes(c)).length === 0 && (
+                <div className="px-4 py-2 text-textMuted text-sm">Sonuç bulunamadı.</div>
+              )}
+              {allCourseCodes
+                .filter(c => c.includes(searchQuery) && !manualCourseList.includes(c))
+                .slice(0, 10)
+                .map(code => (
+                  <div 
+                    key={code} 
+                    className="px-4 py-2 hover:bg-white/10 cursor-pointer font-bold transition"
+                    onClick={() => {
+                      setManualCourseList(prev => [...prev, code]);
+                      setSearchQuery("");
+                    }}
+                  >
+                    {code}
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       </div>
 

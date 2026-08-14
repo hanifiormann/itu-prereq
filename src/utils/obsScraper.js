@@ -10,6 +10,14 @@ export const fetchBranchCodes = async () => {
   return [{ bransKoduId: 1, dersBransKodu: "ALL" }];
 };
 
+// Fetch all unique course codes (e.g. MAT 103, MAT 103E) from the dataset
+export const fetchAllCourseCodes = async () => {
+  const schedule = await fetchCourseSchedule();
+  const codes = new Set();
+  schedule.forEach(c => codes.add(c.code));
+  return Array.from(codes).sort();
+};
+
 // Instead of fetching per branch, we will fetch the entire DB once and cache it.
 let cachedScheduleData = null;
 
