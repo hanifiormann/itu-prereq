@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // Ensures assets are loaded relative to the index.html on GitHub Pages
+  base: '/itu-prereq/', // Correct base path for GitHub Pages
 })
