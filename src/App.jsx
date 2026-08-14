@@ -99,16 +99,42 @@ function App() {
     let passedEcts = 0;
 
     currentSemesters.flat().forEach(item => {
+      let c = 0;
+      let e = 0;
+      let isPassed = false;
+
       if (item.type === 'course' && courses[item.code]) {
-        const c = parseFloat(courses[item.code].credits) || 0;
-        const e = parseFloat(courses[item.code].ects) || 0;
-        totalCredits += c;
-        totalEcts += e;
-        
-        if (courseStatuses[item.code] === 'passed') {
-          passedCredits += c;
-          passedEcts += e;
+        c = parseFloat(courses[item.code].credits) || 0;
+        e = parseFloat(courses[item.code].ects) || 0;
+        if (courseStatuses[item.code] === 'passed') isPassed = true;
+      } else if (item.type === 'elective') {
+        // Find credits from the first available option, or default to 3 credits
+        let found = false;
+        if (item.options && item.options.length > 0) {
+          for (let opt of item.options) {
+            const optCode = opt.split('(')[0].trim();
+            if (courses[optCode]) {
+              c = parseFloat(courses[optCode].credits) || 0;
+              e = parseFloat(courses[optCode].ects) || 0;
+              found = true;
+              break;
+            }
+          }
+          // Check if user passed any option in this elective
+          isPassed = item.options.some(opt => courseStatuses[opt.split('(')[0].trim()] === 'passed');
         }
+        if (!found) {
+          c = 3;
+          e = 4;
+        }
+      }
+
+      totalCredits += c;
+      totalEcts += e;
+      
+      if (isPassed) {
+        passedCredits += c;
+        passedEcts += e;
       }
     });
 
