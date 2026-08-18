@@ -8,7 +8,7 @@ import { useItuData } from './hooks/useItuData';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Xwrapper } from 'react-xarrows';
 import { toPng } from 'html-to-image';
-import { ZoomIn, ZoomOut, Maximize, Sun, Moon, Download, CalendarDays, Map } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Sun, Moon, Download, CalendarDays, Map, Menu } from 'lucide-react';
 
 function App() {
   const { courses, plans, loading, error } = useItuData();
@@ -23,6 +23,9 @@ function App() {
   
   // Tab State
   const [activeTab, setActiveTab] = useState('map');
+
+  // Mobile Menu State
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Theme State
   const [theme, setTheme] = useState('dark');
@@ -220,13 +223,25 @@ function App() {
         courseStatuses={courseStatuses}
         toggleStatus={handleToggleStatus}
         obsLive={obsLive} setObsLive={setObsLive}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
       
-      <main className="flex-grow relative bg-gradient-to-br from-bgSecondary to-bgPrimary overflow-hidden">
+      <main className="flex-grow relative bg-gradient-to-br from-bgSecondary to-bgPrimary overflow-hidden flex flex-col">
         
+        {/* Mobile Header Toggle */}
+        <div className="md:hidden absolute top-4 left-4 z-40">
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-3 glass-panel rounded-lg hover:bg-white/10 transition"
+          >
+            <Menu className="w-6 h-6 text-white" />
+          </button>
+        </div>
+
         {/* Tabs */}
         {currentSemesters.length > 0 && (
-          <div className="absolute top-6 left-6 z-30 flex gap-2">
+          <div className="absolute top-4 left-20 md:top-6 md:left-6 z-30 flex gap-2">
             <button onClick={() => setActiveTab('map')} className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition ${activeTab === 'map' ? 'bg-accentBlue text-white' : 'glass-panel text-textMuted hover:text-white'}`}>
               <Map className="w-5 h-5" /> Müfredat
             </button>
@@ -238,8 +253,8 @@ function App() {
 
         {/* Progress Bar */}
         {currentSemesters.length > 0 && activeTab === 'map' && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4 pointer-events-none">
-            <div className="glass-panel p-4 rounded-xl flex flex-col gap-2 pointer-events-auto shadow-2xl">
+          <div className="absolute top-16 md:top-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-sm md:max-w-lg px-4 pointer-events-none transition-all">
+            <div className="glass-panel p-3 md:p-4 rounded-xl flex flex-col gap-2 pointer-events-auto shadow-2xl">
               <div className="flex justify-between items-center text-sm font-semibold">
                 <span>Mezuniyet İlerlemesi</span>
                 <span className="text-accentBlue">{((curriculumStats.passedEcts / (curriculumStats.totalEcts || 1)) * 100).toFixed(1)}%</span>
@@ -260,7 +275,7 @@ function App() {
 
         {/* Toolbar */}
         {activeTab === 'map' && (
-          <div className="absolute top-6 right-6 z-30 flex gap-2">
+          <div className="absolute top-4 right-4 md:top-6 md:right-6 z-30 flex flex-row md:flex-row gap-2 max-w-[150px] md:max-w-full flex-wrap justify-end">
             <button onClick={handleExport} className="w-10 h-10 flex items-center justify-center glass-panel rounded-lg hover:bg-accentBlue hover:text-white transition group mr-2" title="Görüntüyü İndir (PNG)">
               <Download className="w-5 h-5 group-hover:scale-110 transition" />
             </button>
@@ -277,7 +292,7 @@ function App() {
         {activeTab === 'map' ? (
           <div 
             ref={canvasRef}
-            className={`w-full h-full overflow-auto custom-scrollbar relative ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            className={`w-full h-full overflow-auto custom-scrollbar relative pt-32 md:pt-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}

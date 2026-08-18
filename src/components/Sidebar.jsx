@@ -10,7 +10,8 @@ const Sidebar = ({
   activeCourse,
   courseStatuses,
   toggleStatus,
-  obsLive, setObsLive
+  obsLive, setObsLive,
+  isMobileMenuOpen, setIsMobileMenuOpen
 }) => {
 
   const faculties = Object.keys(plans).sort();
@@ -31,13 +32,31 @@ const Sidebar = ({
   }, [plans]);
 
   return (
-    <aside className="w-80 bg-bgSecondary/90 backdrop-blur-md border-r border-white/10 h-full flex flex-col p-6 shadow-2xl z-20 shrink-0">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold tracking-tight">İTÜ<span className="text-accentRed">Zincir</span></h2>
-        <p className="text-textMuted text-sm mt-1">Ön Koşul Görselleştirici V2</p>
-      </div>
+    <>
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+      
+      <aside className={`fixed inset-y-0 left-0 z-50 w-80 bg-bgSecondary/95 backdrop-blur-md border-r border-white/10 h-full flex flex-col p-6 shadow-2xl shrink-0 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} overflow-y-auto custom-scrollbar`}>
+        
+        {/* Mobile Close Button */}
+        <button 
+          className="md:hidden absolute top-4 right-4 p-2 text-textMuted hover:text-white transition bg-bgPrimary/50 rounded-lg"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
 
-      <div className="space-y-4 flex-grow">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold tracking-tight">İTÜ<span className="text-accentRed">Zincir</span></h2>
+          <p className="text-textMuted text-sm mt-1">Ön Koşul Görselleştirici V2</p>
+        </div>
+
+        <div className="space-y-4 flex-grow">
         <div className="flex flex-col gap-1">
           <label className="text-sm text-textMuted font-medium">Fakülte:</label>
           <select 
@@ -65,7 +84,14 @@ const Sidebar = ({
           <label className="text-sm text-textMuted font-medium">Müfredat Yılı:</label>
           <select 
             className="p-2 bg-bgPrimary border border-white/10 rounded-md outline-none focus:border-accentBlue transition-colors text-sm"
-            value={version} onChange={(e) => setVersion(e.target.value)}
+            value={version} 
+            onChange={(e) => {
+              setVersion(e.target.value);
+              // Close mobile menu when a full curriculum is selected
+              if (window.innerWidth < 768 && e.target.value !== "") {
+                setIsMobileMenuOpen(false);
+              }
+            }}
             disabled={!program}
           >
             <option value="">Seçiniz...</option>
@@ -111,6 +137,7 @@ const Sidebar = ({
         <span className="font-medium">OBS Canlı Veri (Deneysel)</span>
       </div>
     </aside>
+    </>
   );
 };
 

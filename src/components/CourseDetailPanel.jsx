@@ -12,7 +12,7 @@ const CourseDetailPanel = ({ course, status, toggleStatus, onClose }) => {
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: 400, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed top-0 right-0 h-full w-[350px] glass-panel z-50 shadow-2xl border-l border-white/10 p-6 flex flex-col"
+        className="fixed top-0 right-0 h-full w-full md:w-[350px] glass-panel z-50 shadow-2xl border-l border-white/10 p-6 flex flex-col"
       >
         <button 
           onClick={onClose}

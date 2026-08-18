@@ -195,18 +195,18 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
   const currentCombo = combinations[currentComboIdx];
 
   return (
-    <div className="flex flex-col w-full h-full p-6 lg:p-12 gap-6 overflow-y-auto custom-scrollbar">
+    <div className="flex flex-col w-full h-full p-4 pt-20 md:p-6 md:pt-6 lg:p-12 gap-6 overflow-y-auto custom-scrollbar">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-            <CalendarDays className="w-8 h-8 text-accentBlue" />
+          <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
+            <CalendarDays className="w-6 h-6 md:w-8 md:h-8 text-accentBlue" />
             Program Oluşturucu
           </h2>
-          <p className="text-textMuted mt-1">Zincirde <b>alabileceğiniz</b> derslere göre otomatik çakışmayan program kombinasyonları.</p>
+          <p className="text-sm md:text-base text-textMuted mt-1">Zincirde <b>alabileceğiniz</b> derslere göre otomatik çakışmayan program kombinasyonları.</p>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="glass-panel px-4 py-3 rounded-xl flex items-center gap-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 w-full md:w-auto">
+          <div className="glass-panel px-4 py-3 rounded-xl flex items-center justify-between md:justify-start gap-3">
             <label className="text-sm font-bold text-textMuted">Hedef Ders Sayısı:</label>
             <select 
               value={maxCourses} 
@@ -218,7 +218,7 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
           </div>
           <button 
             onClick={loadScheduleData}
-            className="glass-panel px-6 py-3 rounded-xl font-bold hover:bg-accentBlue hover:text-white transition shadow-lg flex items-center gap-2"
+            className="glass-panel px-6 py-3 rounded-xl font-bold hover:bg-accentBlue hover:text-white transition shadow-lg flex items-center justify-center gap-2 w-full md:w-auto"
           >
             <RefreshCw className="w-5 h-5" /> Program Üret
           </button>
@@ -309,7 +309,8 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
             </button>
           </div>
 
-          <div className="grid grid-cols-6 gap-2 bg-bgPanel p-4 rounded-2xl border border-white/10 shadow-2xl min-w-[800px] overflow-x-auto">
+          <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+            <div className="grid grid-cols-6 gap-2 bg-bgPanel p-4 rounded-2xl border border-white/10 shadow-2xl min-w-[800px]">
             {/* Header */}
             <div className="text-center font-bold p-2 text-textMuted border-b border-white/10">Saat</div>
             {DAYS.map(day => (
@@ -347,6 +348,7 @@ const TimetableBuilder = ({ semesters, courses, courseStatuses }) => {
                 })}
               </React.Fragment>
             ))}
+            </div>
           </div>
 
           <div className="glass-panel p-6 rounded-xl">
